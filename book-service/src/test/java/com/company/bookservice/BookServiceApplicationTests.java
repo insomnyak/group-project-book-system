@@ -1,4 +1,4 @@
-package com.trilogyed.springconfigserver;
+package com.company.bookservice;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -7,7 +7,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class SpringConfigServerApplicationTests {
+public class BookServiceApplicationTests {
 
 	@Test
 	public void contextLoads() {
