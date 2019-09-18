@@ -1,0 +1,256 @@
+openapi: 3.0.0
+info:
+  title: Book System Service
+  description: A simple service that allows CRUD operations for a book system that stores books and respective book notes.
+  version: 0.0.1
+servers: 
+  - url: 'http://localhost:9100'
+    description: config server
+  - url: 'http://localhost:8761'
+    description: Eureka server
+  - url: 'http://localhost:4242'
+    description: book service
+  - url: 'http://localhost:1984'
+    description: note service
+
+# Basic CRUD Book
+paths:
+  /books:
+    post:
+      summary: Creates a new Book.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Book'
+      responses:
+        '201':
+          description: A Book object and list of notes (if applicable).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: Invalid request syntax.
+        '422':
+          description: Incomplete item information. Some required fields missing.
+    get:
+      summary: Retrieves all Book entries.
+      responses:
+        '200':
+          description: A list of all Book entries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Books'
+  /books/{id}:
+    get:
+      summary: Retrieves the entry for the Book by ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the Book you would like to retrieve.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Book object matching given ID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '404':
+          description: Book with given ID not found.
+          
+    delete:
+      summary: Deletes the entry for the Book by ID.
+      parameters: 
+        - name: id
+          in: path
+          required: true
+          description: ID of the Book you would like to delete.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Book successfully deleted.
+        '404':
+          description: Book with given ID not found.
+    put:
+      summary: Updates the entry for the Book by ID.
+      parameters: 
+        - name: id
+          in: path
+          required: true
+          description: ID of the Book you would like to update.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Book'
+      responses:
+        '200':
+          description: Book successfully updated.
+        '404':
+          description: Book with given ID not found.
+        '422':
+          description: Book ID on path must match the ID in the Book object.
+          
+# Basic CRUD Note
+  /notes:
+    post:
+      summary: Creates a new Note.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Note'
+      responses:
+        '201':
+          description: A Note object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          description: Invalid request syntax.
+        '422':
+          description: Incomplete item information. Some required fields missing.
+    get:
+      summary: Retrieves all Note entries.
+      responses:
+        '200':
+          description: A list of all Note entries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Books'
+  /notes/{id}:
+    get:
+      summary: Retrieves the entry for the Note by ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the Note you would like to retrieve.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Note object matching given ID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '404':
+          description: Note with given ID not found.
+    delete:
+      summary: Deletes the entry for the Note by ID.
+      parameters: 
+        - name: id
+          in: path
+          required: true
+          description: ID of the Note you would like to delete.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Note successfully deleted.
+        '404':
+          description: Note with given ID not found.
+    put:
+      summary: Updates the entry for the Note by ID.
+      parameters: 
+        - name: id
+          in: path
+          required: true
+          description: ID of the Note you would like to update.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Note'
+      responses:
+        '200':
+          description: Note successfully updated.
+        '404':
+          description: Note with given ID not found.
+        '422':
+          description: Note ID on path must match the ID in the Note object.
+
+# Custom methods
+  /notes/books/{book_id}:
+    get:
+      summary: Retrieves a Book with a list of Notes
+      parameters: 
+        - name: book_id
+          in: path
+          required: true
+          description: ID of the Book you would like to find with Notes
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Book object matching given ID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '404':
+          description: Book with given ID not found.
+      
+components:
+  schemas:
+    Book:
+      properties:
+        bookId:
+          type: integer
+        title:
+          type: string
+        author:
+          type: string
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+    Note:
+      properties:
+        noteId:
+          type: integer
+        bookId:
+          type: integer
+        note:
+          type: string
+        
+    Books:
+      type: array
+      items:
+         $ref: '#/components/schemas/Book'
+  
