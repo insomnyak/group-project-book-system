@@ -4,9 +4,8 @@ import com.company.noteservice.dao.NoteDao;
 import com.company.noteservice.model.Note;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -45,6 +44,12 @@ public class NoteServiceController {
     @RequestMapping(value = "/notes/{id}", method = RequestMethod.DELETE)
     void deleteNote(Integer noteId) {
         noteDao.delete(noteId);
+    }
+
+    @RequestMapping(value = "/notes/book/{id}", method = RequestMethod.DELETE)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void deleteNoteByBookId(@PathVariable Integer id){
+        noteDao.deleteByBookId(id);
     }
 
 }

@@ -13,6 +13,7 @@ public interface NoteDao {
     List<Note> findAll();
     void update(Note note);
     void delete(Integer id);
+    void deleteByBookId(Integer bookId);
 
     List<Note> findByBookId(Integer bookId);
 

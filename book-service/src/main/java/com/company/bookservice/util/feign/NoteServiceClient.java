@@ -2,6 +2,7 @@ package com.company.bookservice.util.feign;
 
 import com.company.bookservice.viewmodel.NoteViewModel;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -14,10 +15,10 @@ public interface NoteServiceClient {
     NoteViewModel createNote(NoteViewModel nvm);
 
     @RequestMapping(value = "/notes/{id}", method = RequestMethod.GET)
-    NoteViewModel getNote(Integer noteId);
+    NoteViewModel getNote(@PathVariable(value = "id") Integer noteId);
 
     @RequestMapping(value = "/notes/book/{book_id}", method = RequestMethod.GET)
-    List<NoteViewModel> getNotesByBookId(Integer bookId);
+    List<NoteViewModel> getNotesByBookId(@PathVariable(value = "book_id") Integer bookId);
 
     @RequestMapping(value = "/notes", method = RequestMethod.GET)
     List<NoteViewModel> getAllNotes();
@@ -26,6 +27,9 @@ public interface NoteServiceClient {
     void updateNote(NoteViewModel nvm);
 
     @RequestMapping(value = "/notes/{id}", method = RequestMethod.DELETE)
-    void deleteNote(Integer noteId);
+    void deleteNote(@PathVariable(value = "id") Integer noteId);
+
+    @RequestMapping(value = "/notes/book/{book_id}", method = RequestMethod.DELETE)
+    void deleteNotesByBookId(@PathVariable(value = "book_id") Integer bookId);
 
 }
