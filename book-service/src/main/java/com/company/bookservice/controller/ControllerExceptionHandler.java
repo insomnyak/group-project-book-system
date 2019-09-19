@@ -1,4 +1,4 @@
-package com.company.noteservice.controller;
+package com.company.bookservice.controller;
 
 import org.springframework.hateoas.VndErrors;
 import org.springframework.http.HttpStatus;

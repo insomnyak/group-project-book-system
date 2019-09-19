@@ -92,8 +92,15 @@ public class ServiceLayer {
             bookDao.deleteBook(bookId);
     }
 
+    @Transactional
+    public void updateBook(Integer bookId, BookViewModel bookViewModel) {
+        if (bookViewModel.getBookId() == null) {
+            bookViewModel.setBookId(bookId);
+        }
+        if (!bookId.equals(bookViewModel.getBookId())) {
+            throw new IllegalArgumentException("Id in the path must match the Id in the Book object");
+        }
 
-    public void updateBook(BookViewModel bookViewModel) {
         // mapClasses is getting all Book View Model fields and adding to Book object
         Book book = (new MapClasses<>(bookViewModel, Book.class))
                 .mapFirstToSecond(false, false);
@@ -105,5 +112,42 @@ public class ServiceLayer {
                 noteServiceClient.updateNote(note);
             });
         }
+    }
+
+    @Transactional
+    public NoteViewModel saveNote(NoteViewModel nvm) {
+        String note = nvm.getNote();
+        if (note == null || note.trim().length() == 0) {
+            throw new IllegalArgumentException("Please provide a non-empty note.");
+        }
+
+        validateNote(nvm);
+
+        return noteServiceClient.createNote(nvm);
+    }
+
+    public List<NoteViewModel> findAllNotes() {
+        return noteServiceClient.getAllNotes();
+    }
+
+    public void updateNote(NoteViewModel nvm) {
+        validateNote(nvm);
+        noteServiceClient.updateNote(nvm);
+    }
+
+    public void removeNote(Integer noteId) {
+        NoteViewModel nvm = noteServiceClient.getNote(noteId);
+        if (nvm == null)
+            throw new NoSuchElementException(String.format("No Note with id %s found", noteId));
+        noteServiceClient.deleteNote(noteId);
+    }
+
+    public void validateNote(NoteViewModel nvm) {
+        if (nvm.getBookId() == null)
+            throw new IllegalArgumentException("Please provide a bookId");
+
+        Book book = bookDao.getBookById(nvm.getBookId());
+        if(book == null)
+            throw new NoSuchElementException(String.format("No Book with id %s found", nvm.getBookId()));
     }
 }
