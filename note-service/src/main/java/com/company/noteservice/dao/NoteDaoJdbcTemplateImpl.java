@@ -80,7 +80,7 @@ public class NoteDaoJdbcTemplateImpl implements NoteDao {
     @Override
     public Note mapRowToNote(ResultSet rs, int rowNum) throws SQLException {
         Note note = new Note();
-        note.setNoteId(rs.getInt("noted_id"));
+        note.setNoteId(rs.getInt("note_id"));
         note.setBookId(rs.getInt("book_id"));
         note.setNote(rs.getString("note"));
         return note;
