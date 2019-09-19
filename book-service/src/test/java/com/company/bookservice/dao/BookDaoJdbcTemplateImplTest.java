@@ -56,6 +56,7 @@ public class BookDaoJdbcTemplateImplTest {
 
     }
 
+    @Test
     public void getAllBooks(){
 
         Book book = new Book();
@@ -76,6 +77,7 @@ public class BookDaoJdbcTemplateImplTest {
 
     }
 
+    @Test
     public void updateBook(){
 
         Book book = new Book();
