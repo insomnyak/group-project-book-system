@@ -19,7 +19,7 @@ public class BookViewModel {
     private String author;
 
     @Valid
-    private List<NoteViewModel> noteViewModelList;
+    private List<NoteViewModel> notes;
 
     public Integer getBookId() {
         return bookId;
@@ -45,12 +45,12 @@ public class BookViewModel {
         this.author = author;
     }
 
-    public List<NoteViewModel> getNoteViewModelList() {
-        return noteViewModelList;
+    public List<NoteViewModel> getNotes() {
+        return notes;
     }
 
-    public void setNoteViewModelList(List<NoteViewModel> noteViewModelList) {
-        this.noteViewModelList = noteViewModelList;
+    public void setNotes(List<NoteViewModel> notes) {
+        this.notes = notes;
     }
 
     @Override
@@ -61,11 +61,11 @@ public class BookViewModel {
         return Objects.equals(getBookId(), that.getBookId()) &&
                 getTitle().equals(that.getTitle()) &&
                 getAuthor().equals(that.getAuthor()) &&
-                Objects.equals(getNoteViewModelList(), that.getNoteViewModelList());
+                Objects.equals(getNotes(), that.getNotes());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getBookId(), getTitle(), getAuthor(), getNoteViewModelList());
+        return Objects.hash(getBookId(), getTitle(), getAuthor(), getNotes());
     }
 }

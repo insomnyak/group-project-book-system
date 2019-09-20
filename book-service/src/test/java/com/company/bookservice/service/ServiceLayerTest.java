@@ -111,7 +111,7 @@ public class ServiceLayerTest {
         updateNoteList.add(updateNote);
 
         // mock update
-        doNothing().when(noteServiceClient).updateNote(updateNote);
+        doNothing().when(noteServiceClient).updateNote(200, updateNote);
         doReturn(updateNote).when(noteServiceClient).getNote(200);
         doReturn(updateNoteList).when(noteServiceClient).getNotesByBookId(2);
 
@@ -140,7 +140,7 @@ public class ServiceLayerTest {
         BookViewModel bvm = new BookViewModel();
         bvm.setTitle("Catcher in the Rye");
         bvm.setAuthor("J.D Salinger");
-        bvm.setNoteViewModelList(noteViewModelList);
+        bvm.setNotes(noteViewModelList);
 
         bvm = serviceLayer.saveBook(bvm);
 
@@ -170,7 +170,7 @@ public class ServiceLayerTest {
         bvmUpdate.setBookId(bookUpdate.getBookId());
         bvmUpdate.setAuthor(bookUpdate.getAuthor());
         bvmUpdate.setTitle(bookUpdate.getTitle());
-        bvmUpdate.setNoteViewModelList(noteViewModelList);
+        bvmUpdate.setNotes(noteViewModelList);
 
         serviceLayer.updateBook(bookUpdate.getBookId(), bvmUpdate);
 
@@ -209,7 +209,7 @@ public class ServiceLayerTest {
         bvm.setBookId(book.getBookId());
         bvm.setAuthor(book.getAuthor());
         bvm.setTitle(book.getTitle());
-        bvm.setNoteViewModelList(noteViewModelList);
+        bvm.setNotes(noteViewModelList);
 
         serviceLayer.updateBook(3, bvm);
     }
@@ -234,7 +234,7 @@ public class ServiceLayerTest {
         bvm.setBookId(book.getBookId());
         bvm.setAuthor(book.getAuthor());
         bvm.setTitle(book.getTitle());
-        bvm.setNoteViewModelList(noteViewModelList);
+        bvm.setNotes(noteViewModelList);
 
         serviceLayer.saveBook(bvm);
     }

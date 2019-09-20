@@ -3,6 +3,7 @@ package com.company.bookservice.util.feign;
 import com.company.bookservice.viewmodel.NoteViewModel;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -12,7 +13,7 @@ import java.util.List;
 public interface NoteServiceClient {
 
     @RequestMapping(value = "/notes", method = RequestMethod.POST)
-    NoteViewModel createNote(NoteViewModel nvm);
+    NoteViewModel createNote(@RequestBody NoteViewModel nvm);
 
     @RequestMapping(value = "/notes/{id}", method = RequestMethod.GET)
     NoteViewModel getNote(@PathVariable(value = "id") Integer noteId);
@@ -24,7 +25,7 @@ public interface NoteServiceClient {
     List<NoteViewModel> getAllNotes();
 
     @RequestMapping(value = "/notes/{id}", method = RequestMethod.PUT)
-    void updateNote(NoteViewModel nvm);
+    void updateNote(@PathVariable Integer id, @RequestBody NoteViewModel nvm);
 
     @RequestMapping(value = "/notes/{id}", method = RequestMethod.DELETE)
     void deleteNote(@PathVariable(value = "id") Integer noteId);
