@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 @Component
 public class ServiceLayer {
@@ -83,6 +84,7 @@ public class ServiceLayer {
     }
 
     public void removeBook(Integer bookId) {
+        noteServiceClient.deleteNotesByBookId(bookId);
 
         Book book = bookDao.getBookById(bookId);
 
@@ -106,8 +108,47 @@ public class ServiceLayer {
                 .mapFirstToSecond(false, false);
 
         bookDao.updateBook(book);
+        List<NoteViewModel> notes = bookViewModel.getNoteViewModelList();
+        if (notes == null || notes.isEmpty()) {
+            noteServiceClient.deleteNotesByBookId(bookId);
+        } else {
+            // update, delete, add
+            List<NoteViewModel> noteViewModelList = noteServiceClient.getNotesByBookId(bookId);
 
-        if (bookViewModel != null && !bookViewModel.getNoteViewModelList().isEmpty()) {
+            // delete Notes that are not present in received BookViewModel
+            List<NoteViewModel> oldNotesNotPresent = noteViewModelList.stream().filter(note -> {
+                for (NoteViewModel n: notes) {
+                    if (note.getBookId() == n.getBookId()) return true;
+                }
+                return false;
+            }).collect(Collectors.toList());
+            oldNotesNotPresent.forEach(n -> noteServiceClient.deleteNote(n.getNoteId()));
+
+            // update/add all notes
+            for (NoteViewModel n : notes) {
+                if (n.getNote() == null || n.getNote().isEmpty()) {
+                    continue;
+                }
+                n.setBookId(bookId);
+                // add with NoteId is null
+                if (n.getNoteId() == null) {
+                    NoteViewModel newNote = noteServiceClient.createNote(n);
+                    n.setNoteId(newNote.getNoteId());
+                } else { // update note is NoteId is not null
+                    NoteViewModel checkIfNoteExists = noteServiceClient.getNote(n.getNoteId());
+                    if (checkIfNoteExists == null) {
+                        NoteViewModel newNote = noteServiceClient.createNote(n);
+                        n.setNoteId(newNote.getNoteId());
+                    } else {
+                        noteServiceClient.updateNote(n);
+                    }
+                }
+            }
+
+
+
+
+
             bookViewModel.getNoteViewModelList().stream().forEach(note -> {
                 noteServiceClient.updateNote(note);
             });

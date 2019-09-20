@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @RestController
 @RequestMapping(value = "/books")
@@ -37,6 +38,12 @@ public class BookServiceController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updateBook(@PathVariable Integer id, @RequestBody @Valid BookViewModel bvm) {
         sl.updateBook(id, bvm);
+    }
+
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    public List<BookViewModel> findAllBooks() {
+        return sl.findAllBooks();
     }
 
 }

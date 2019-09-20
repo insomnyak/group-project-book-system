@@ -26,6 +26,8 @@ public class NoteDaoJdbcTemplateImpl implements NoteDao {
             "delete from note where note_id = ?";
     private final String SELECT_ALL_NOTES_BY_BOOK_ID_SQL =
             "select * from note where book_id = ?";
+    private final String DELETE_BY_BOOK_ID_SQL =
+            "delete from note where book_id = ?";
 
     private JdbcTemplate jdbcTemplate;
 
@@ -70,6 +72,11 @@ public class NoteDaoJdbcTemplateImpl implements NoteDao {
     @Override
     public void delete(Integer id) {
         jdbcTemplate.update(DELETE_NOTE_SQL, id);
+    }
+
+    @Override
+    public void deleteByBookId(Integer bookId) {
+        jdbcTemplate.update(DELETE_BY_BOOK_ID_SQL, bookId);
     }
 
     @Override
