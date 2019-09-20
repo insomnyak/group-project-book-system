@@ -33,20 +33,23 @@ public class ServiceLayer {
         // mapClasses is getting all Book View Model fields and adding to Book object
         Book book = (new MapClasses<>(bookViewModel, Book.class))
                 .mapFirstToSecond(false, false);
+        book = bookDao.addBook(book);
 
         /* if NoteViewModel list is not empty then we call the feign service (NoteServiceClient) to retrieve
          all NoteViewModel to add the notes to the NoteDAO and then setting the ID on the return note*/
-        if (bookViewModel != null && !bookViewModel.getNoteViewModelList().isEmpty()) {
-            bookViewModel.getNoteViewModelList().stream().forEach(nvm -> {
+        if (bookViewModel != null && !bookViewModel.getNotes().isEmpty()) {
+            Book finalBook = book;
+            bookViewModel.getNotes().stream().forEach(nvm -> {
                 if (nvm == null || nvm.getNote() == null || nvm.getNote().trim().length() == 0) {
                     throw new IllegalArgumentException("Please provide content for the note.");
                 }
+                nvm.setBookId(finalBook.getBookId());
                 NoteViewModel nvm2 = noteServiceClient.createNote(nvm);
                 nvm.setNoteId(nvm2.getNoteId());
             });
         }
 
-        book = bookDao.addBook(book);
+
         bookViewModel.setBookId(book.getBookId());
 
         return bookViewModel;
@@ -58,7 +61,7 @@ public class ServiceLayer {
                 .mapFirstToSecond(false, false);
 
         List<NoteViewModel> noteViewModelList = noteServiceClient.getNotesByBookId(book.getBookId());
-        bookViewModel.setNoteViewModelList(noteViewModelList);
+        bookViewModel.setNotes(noteViewModelList);
 
         return bookViewModel;
     }
@@ -111,7 +114,7 @@ public class ServiceLayer {
                 .mapFirstToSecond(false, false);
 
         bookDao.updateBook(book);
-        List<NoteViewModel> notes = bookViewModel.getNoteViewModelList();
+        List<NoteViewModel> notes = bookViewModel.getNotes();
         if (notes == null || notes.isEmpty()) {
             noteServiceClient.deleteNotesByBookId(bookId);
         } else {
@@ -143,7 +146,7 @@ public class ServiceLayer {
                         NoteViewModel newNote = noteServiceClient.createNote(n);
                         n.setNoteId(newNote.getNoteId());
                     } else {
-                        noteServiceClient.updateNote(n);
+                        noteServiceClient.updateNote(n.getNoteId(), n);
                     }
                 }
             }
@@ -152,8 +155,8 @@ public class ServiceLayer {
 
 
 
-            bookViewModel.getNoteViewModelList().stream().forEach(note -> {
-                noteServiceClient.updateNote(note);
+            bookViewModel.getNotes().stream().forEach(note -> {
+                noteServiceClient.updateNote(note.getNoteId(), note);
             });
         }
     }
@@ -176,7 +179,7 @@ public class ServiceLayer {
 
     public void updateNote(NoteViewModel nvm) {
         validateNote(nvm);
-        noteServiceClient.updateNote(nvm);
+        noteServiceClient.updateNote(nvm.getNoteId(), nvm);
     }
 
     public void removeNote(Integer noteId) {

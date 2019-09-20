@@ -1,7 +1,6 @@
 package com.company.bookservice.viewmodel;
 
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.Objects;
 
@@ -9,7 +8,6 @@ public class NoteViewModel {
 
     private Integer noteId;
 
-    @NotNull(message = "Book ID must have a value")
     private Integer bookId;
 
     @Size(max = 255)

@@ -17,17 +17,17 @@ public class NoteServiceController {
     NoteDao noteDao;
 
     @RequestMapping(value = "/notes", method = RequestMethod.POST)
-    Note createNote(Note note) {
+    Note createNote(@RequestBody Note note) {
         return noteDao.add(note);
     }
 
     @RequestMapping(value = "/notes/{id}", method = RequestMethod.GET)
-    Note getNote(Integer noteId) {
+    Note getNote(@PathVariable(name = "id") Integer noteId) {
         return noteDao.find(noteId);
     }
 
     @RequestMapping(value = "/notes/book/{book_id}", method = RequestMethod.GET)
-    List<Note> getNotesByBookId(Integer bookId) {
+    List<Note> getNotesByBookId(@PathVariable(name = "book_id") Integer bookId) {
         return noteDao.findByBookId(bookId);
     }
 
@@ -37,18 +37,18 @@ public class NoteServiceController {
     }
 
     @RequestMapping(value = "/notes/{id}", method = RequestMethod.PUT)
-    void updateNote(Note note) {
-        noteDao.update(note);
+    void updateNote(@PathVariable Integer id, @RequestBody Note note) {
+        noteDao.update(id, note);
     }
 
     @RequestMapping(value = "/notes/{id}", method = RequestMethod.DELETE)
-    void deleteNote(Integer noteId) {
+    void deleteNote(@PathVariable(name = "id") Integer noteId) {
         noteDao.delete(noteId);
     }
 
     @RequestMapping(value = "/notes/book/{id}", method = RequestMethod.DELETE)
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void deleteNoteByBookId(@PathVariable Integer id){
+    void deleteNoteByBookId(@PathVariable(name = "id") Integer id){
         noteDao.deleteByBookId(id);
     }
 

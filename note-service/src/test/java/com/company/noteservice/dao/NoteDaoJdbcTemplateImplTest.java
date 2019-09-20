@@ -44,7 +44,7 @@ public class NoteDaoJdbcTemplateImplTest {
 
         // update
         note.setNote("testing 2345");
-        noteDao.update(note);
+        noteDao.update(100, note);
         note2 = noteDao.find(note.getNoteId());
         assertEquals(note, note2);
 
