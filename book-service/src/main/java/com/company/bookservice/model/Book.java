@@ -1,11 +1,19 @@
 package com.company.bookservice.model;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Size;
 import java.util.Objects;
 
 public class Book {
 
     private Integer bookId;
+
+    @NotEmpty(message = "Please supply a title for the book")
+    @Size(min=1, max=50, message = "Please supply a valid book title")
     private String title;
+
+    @NotEmpty(message = "Please supply an author for the book")
+    @Size(min=1, max=50, message = "Please supply a valid author name")
     private String author;
 
     public Integer getBookId() {

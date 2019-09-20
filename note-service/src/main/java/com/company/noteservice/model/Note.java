@@ -1,21 +1,20 @@
 package com.company.noteservice.model;
 
 
-import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.Objects;
 
 public class Note {
 
-    @Min(value = 1)
     private Integer noteId;
 
-    @NotNull
-    @Min(value = 1)
+    @NotNull(message = "Book ID must have a value")
     private Integer bookId;
 
     @Size(max = 255)
+    @NotEmpty(message = "Please supply content for the note")
     private String note;
 
     public Integer getNoteId() {
