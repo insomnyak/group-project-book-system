@@ -37,13 +37,16 @@ public class ServiceLayer {
         /* if NoteViewModel list is not empty then we call the feign service (NoteServiceClient) to retrieve
          all NoteViewModel to add the notes to the NoteDAO and then setting the ID on the return note*/
         if (bookViewModel != null && !bookViewModel.getNoteViewModelList().isEmpty()) {
-            bookViewModel.getNoteViewModelList().stream().forEach(note -> {
-                NoteViewModel nvm = noteServiceClient.createNote(note);
-                note.setNoteId(nvm.getNoteId());
+            bookViewModel.getNoteViewModelList().stream().forEach(nvm -> {
+                if (nvm == null || nvm.getNote() == null || nvm.getNote().trim().length() == 0) {
+                    throw new IllegalArgumentException("Please provide content for the note.");
+                }
+                NoteViewModel nvm2 = noteServiceClient.createNote(nvm);
+                nvm.setNoteId(nvm2.getNoteId());
             });
         }
 
-        bookDao.addBook(book);
+        book = bookDao.addBook(book);
         bookViewModel.setBookId(book.getBookId());
 
         return bookViewModel;
