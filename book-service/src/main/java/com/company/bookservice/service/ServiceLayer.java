@@ -130,8 +130,15 @@ public class ServiceLayer {
             }).collect(Collectors.toList());
             oldNotesNotPresent.forEach(n -> noteServiceClient.deleteNote(n.getNoteId()));
 
+            List<NoteViewModel> notesToUpdateAdd = notes.stream().filter(note -> {
+                for (NoteViewModel n: oldNotesNotPresent) {
+                    if (note.getBookId() == n.getBookId()) return false;
+                }
+                return true;
+            }).collect(Collectors.toList());
+
             // update/add all notes
-            for (NoteViewModel n : notes) {
+            for (NoteViewModel n : notesToUpdateAdd) {
                 if (n.getNote() == null || n.getNote().isEmpty()) {
                     continue;
                 }
