@@ -44,7 +44,7 @@ public class ServiceLayer {
                     throw new IllegalArgumentException("Please provide content for the note.");
                 }
                 nvm.setBookId(finalBook.getBookId());
-                NoteViewModel nvm2 = noteServiceClient.createNote(nvm);
+                NoteViewModel nvm2 = saveNote(nvm);
                 nvm.setNoteId(nvm2.getNoteId());
             });
         }
@@ -60,21 +60,31 @@ public class ServiceLayer {
         BookViewModel bookViewModel = (new MapClasses<>(book, BookViewModel.class))
                 .mapFirstToSecond(false, false);
 
-        List<NoteViewModel> noteViewModelList = noteServiceClient.getNotesByBookId(book.getBookId());
+        List<NoteViewModel> noteViewModelList = findAllNotesByBookId(book.getBookId());
         bookViewModel.setNotes(noteViewModelList);
 
         return bookViewModel;
     }
 
     public List<BookViewModel> findAllBooks(){
-
+        // 1. get all books
         List<Book> bookList = bookDao.getAllBooks();
-
+        // 2. get all notes
+        List<NoteViewModel> noteViewModelList = findAllNotes();
+        // 3. instantiate bookViewModeList
         List<BookViewModel> bookViewModelList = new ArrayList<>();
 
-        for(Book b : bookList){
-            BookViewModel bvm = buildBookViewModel(b);
+        // 4. for each book in bookList
+        for(Book book : bookList){
+            // i. create bvm and set each book property
+            BookViewModel bvm = (new MapClasses<>(book, BookViewModel.class))
+                    .mapFirstToSecond(false, false);
+            // ii. select notes where nvm.getBookId == book.getBookId >> and set bvm notes list accordingly
+            bvm.setNotes(noteViewModelList.stream().filter(nvm -> nvm.getBookId().equals(book.getBookId()))
+                    .collect(Collectors.toList()));
+            // iii. add bvm to bookViewModelList
             bookViewModelList.add(bvm);
+            //BookViewModel bvm = buildBookViewModel(b);
         }
         return bookViewModelList;
     }
@@ -90,7 +100,7 @@ public class ServiceLayer {
     }
 
     public void removeBook(Integer bookId) {
-        noteServiceClient.deleteNotesByBookId(bookId);
+        removeNotesByBookId(bookId);
 
         Book book = bookDao.getBookById(bookId);
 
@@ -113,95 +123,98 @@ public class ServiceLayer {
         Book book = (new MapClasses<>(bookViewModel, Book.class))
                 .mapFirstToSecond(false, false);
 
-        bookDao.updateBook(book);
-        List<NoteViewModel> notes = bookViewModel.getNotes();
-        if (notes == null || notes.isEmpty()) {
-            noteServiceClient.deleteNotesByBookId(bookId);
+        Book bookCheck = bookDao.getBookById(bookId);
+        if(bookCheck == null) {
+            throw new NoSuchElementException(String.format("No Book with id %s found", bookId));
         } else {
-            // update, delete, add
-            List<NoteViewModel> noteViewModelList = noteServiceClient.getNotesByBookId(bookId);
+            bookDao.updateBook(book);
+        }
+        List<NoteViewModel> newNotes = bookViewModel.getNotes();
+        if (newNotes == null || newNotes.isEmpty()) {
+            removeNotesByBookId(bookId);
+        } else {
+            // update/delete/add notes
 
-            // delete Notes that are not present in received BookViewModel
-            List<NoteViewModel> oldNotesNotPresent = noteViewModelList.stream().filter(note -> {
-                for (NoteViewModel n: notes) {
-                    if (note.getBookId() == n.getBookId()) return true;
-                }
-                return false;
-            }).collect(Collectors.toList());
-            oldNotesNotPresent.forEach(n -> noteServiceClient.deleteNote(n.getNoteId()));
+            /*
+            1. get the currentNotes
+            2. filter currentNotes for ones not present in newNotes >> notesToDelete
+            3. delete notesToDelete
+            4. for newNotes
+                - if id is present:
+                    i. check that id is in currentNotes >> inCurrentNotes
+                    ii. if id is found >> update
+                    iii. if id is not found >> create new note and update id
+                - if id is not present:
+                    i. create new note and update id
+             */
 
-            List<NoteViewModel> notesToUpdateAdd = notes.stream().filter(note -> {
-                for (NoteViewModel n: oldNotesNotPresent) {
-                    if (note.getBookId() == n.getBookId()) return false;
+            // 1. get currentNotes
+            List<NoteViewModel> currentNotes = findAllNotesByBookId(bookId);
+
+            // 2. filter currentNotes for ones not present in newNotes >> notesToDelete
+            List<NoteViewModel> notesToDelete = currentNotes.stream().filter(nvm -> {
+                for (NoteViewModel newNote : newNotes) {
+                    if (nvm.getNoteId().equals(newNote.getNoteId())) return false;
                 }
                 return true;
             }).collect(Collectors.toList());
 
-            // update/add all notes
-            for (NoteViewModel n : notesToUpdateAdd) {
-                if (n.getNote() == null || n.getNote().isEmpty()) {
-                    continue;
-                }
-                n.setBookId(bookId);
-                // add with NoteId is null
-                if (n.getNoteId() == null) {
-                    NoteViewModel newNote = noteServiceClient.createNote(n);
-                    n.setNoteId(newNote.getNoteId());
-                } else { // update note is NoteId is not null
-                    NoteViewModel checkIfNoteExists = noteServiceClient.getNote(n.getNoteId());
-                    if (checkIfNoteExists == null) {
-                        NoteViewModel newNote = noteServiceClient.createNote(n);
-                        n.setNoteId(newNote.getNoteId());
+            // 3. delete notesToDelete
+            notesToDelete.forEach(nvm -> removeNote(nvm.getNoteId()));
+
+            // 4. for newNotes
+            for (NoteViewModel newNote : newNotes) {
+                if (newNote == null) continue;
+                // - if id is present:
+                if (newNote.getNoteId() != null) {
+                    // i. check that id is in currentNotes
+                    boolean inCurrentNotes = currentNotes.stream()
+                            .anyMatch(nvm -> nvm.getNoteId().equals(newNote.getNoteId()));
+                    // ii. if id is found >> update
+                    if (inCurrentNotes) {
+                        updateNote(newNote);
                     } else {
-                        noteServiceClient.updateNote(n.getNoteId(), n);
+                        // iii. if id is not found >> create new note and update id
+                        if (newNote.getNote() == null || newNote.getNote().trim().length() == 0) {
+                            throw new IllegalArgumentException("Please provide content for the note.");
+                        }
+                        newNote.setBookId(bookId);
+                        NoteViewModel createdNote = saveNote(newNote);
+                        newNote.setNoteId(createdNote.getNoteId());
                     }
+                } else {
+                    // - if id is not present:
+                    // i. create new note and update id
+                    newNote.setBookId(bookId);
+                    NoteViewModel createdNote = saveNote(newNote);
+                    newNote.setNoteId(createdNote.getNoteId());
                 }
             }
-
-
-
-
-
-            bookViewModel.getNotes().stream().forEach(note -> {
-                noteServiceClient.updateNote(note.getNoteId(), note);
-            });
         }
     }
 
     @Transactional
-    public NoteViewModel saveNote(NoteViewModel nvm) {
-        String note = nvm.getNote();
-        if (note == null || note.trim().length() == 0) {
-            throw new IllegalArgumentException("Please provide a non-empty note.");
-        }
-
-        validateNote(nvm);
-
+    private NoteViewModel saveNote(NoteViewModel nvm) {
         return noteServiceClient.createNote(nvm);
     }
 
-    public List<NoteViewModel> findAllNotes() {
+    private List<NoteViewModel> findAllNotes() {
         return noteServiceClient.getAllNotes();
     }
 
-    public void updateNote(NoteViewModel nvm) {
-        validateNote(nvm);
+    private void updateNote(NoteViewModel nvm) {
         noteServiceClient.updateNote(nvm.getNoteId(), nvm);
     }
 
-    public void removeNote(Integer noteId) {
-        NoteViewModel nvm = noteServiceClient.getNote(noteId);
-        if (nvm == null)
-            throw new NoSuchElementException(String.format("No Note with id %s found", noteId));
+    private void removeNote(Integer noteId) {
         noteServiceClient.deleteNote(noteId);
     }
 
-    public void validateNote(NoteViewModel nvm) {
-        if (nvm.getBookId() == null)
-            throw new IllegalArgumentException("Please provide a bookId");
+    private void removeNotesByBookId(Integer bookId) {
+        noteServiceClient.deleteNotesByBookId(bookId);
+    }
 
-        Book book = bookDao.getBookById(nvm.getBookId());
-        if(book == null)
-            throw new NoSuchElementException(String.format("No Book with id %s found", nvm.getBookId()));
+    private List<NoteViewModel> findAllNotesByBookId(Integer bookId) {
+        return noteServiceClient.getNotesByBookId(bookId);
     }
 }
