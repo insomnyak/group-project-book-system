@@ -34,7 +34,7 @@ paths:
         '400':
           description: Invalid request syntax.
         '422':
-          description: Incomplete item information. Some required fields missing.
+          description: Incomplete Book information. Some required fields missing.
     get:
       summary: Retrieves all Book entries.
       responses:
@@ -129,7 +129,7 @@ paths:
         '400':
           description: Invalid request syntax.
         '422':
-          description: Incomplete item information. Some required fields missing.
+          description: Incomplete Note information. Some required fields missing.
     get:
       summary: Retrieves all Note entries.
       responses:
