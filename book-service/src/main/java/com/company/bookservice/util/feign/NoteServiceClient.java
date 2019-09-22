@@ -1,6 +1,6 @@
 package com.company.bookservice.util.feign;
 
-import com.company.bookservice.viewmodel.NoteViewModel;
+import com.company.queue.shared.viewmodel.NoteViewModel;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;

@@ -1,5 +1,7 @@
 package com.company.bookservice.controller;
 
+import com.company.bookservice.exception.FuturesException;
+import com.company.bookservice.exception.QueueRequestTimeoutException;
 import com.netflix.client.ClientException;
 import org.springframework.hateoas.VndErrors;
 import org.springframework.http.HttpStatus;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 import javax.naming.ServiceUnavailableException;
 import java.util.ArrayList;
@@ -70,19 +73,38 @@ public class ControllerExceptionHandler {
         return responseEntity;
     }
 
-    @ExceptionHandler(value = {ClientException.class})
+    @ExceptionHandler(value = {ClientException.class, ServiceUnavailableException.class})
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    public ResponseEntity<VndErrors> clientException(ClientException e, WebRequest request) {
-        VndErrors error = new VndErrors(request.toString(), e.getMessage());
+    public ResponseEntity<VndErrors> clientException(Throwable e, WebRequest request) {
+        VndErrors error = new VndErrors(request.toString(), "One of the internal services is down " +
+                "a the moment. If part of you sent an update book request portions of your request may have " +
+                "been queued.");
         ResponseEntity<VndErrors> responseEntity = new ResponseEntity<>(error, HttpStatus.SERVICE_UNAVAILABLE);
         return responseEntity;
     }
 
-    @ExceptionHandler(value = {ServiceUnavailableException.class})
-    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    public ResponseEntity<VndErrors> serviceUnavailableException(ServiceUnavailableException e, WebRequest request) {
+    @ExceptionHandler(value = {FuturesException.class})
+    @ResponseStatus(HttpStatus.GATEWAY_TIMEOUT)
+    public ResponseEntity<VndErrors> futuresException(FuturesException e, WebRequest request) {
+        VndErrors error = new VndErrors(request.toString(), "An internal service was interrupt while " +
+                "executing your request. Please try your request again.");
+        ResponseEntity<VndErrors> responseEntity = new ResponseEntity<>(error, HttpStatus.GATEWAY_TIMEOUT);
+        return responseEntity;
+    }
+
+    @ExceptionHandler(value = {QueueRequestTimeoutException.class})
+    @ResponseStatus(HttpStatus.GATEWAY_TIMEOUT)
+    public ResponseEntity<VndErrors> queueRequestTimeoutException(QueueRequestTimeoutException e, WebRequest request) {
         VndErrors error = new VndErrors(request.toString(), e.getMessage());
-        ResponseEntity<VndErrors> responseEntity = new ResponseEntity<>(error, HttpStatus.SERVICE_UNAVAILABLE);
+        ResponseEntity<VndErrors> responseEntity = new ResponseEntity<>(error, HttpStatus.GATEWAY_TIMEOUT);
+        return responseEntity;
+    }
+
+    @ExceptionHandler(value = {NoHandlerFoundException.class})
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ResponseEntity<VndErrors> noHandlerFoundException(NoHandlerFoundException e, WebRequest request) {
+        VndErrors error = new VndErrors(request.toString(), e.getMessage());
+        ResponseEntity<VndErrors> responseEntity = new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
         return responseEntity;
     }
 }

@@ -55,4 +55,13 @@ public class Note {
     public int hashCode() {
         return Objects.hash(getNoteId(), getBookId(), getNote());
     }
+
+    @Override
+    public String toString() {
+        return "Note{" +
+                "noteId=" + noteId +
+                ", bookId=" + bookId +
+                ", note='" + note + '\'' +
+                '}';
+    }
 }

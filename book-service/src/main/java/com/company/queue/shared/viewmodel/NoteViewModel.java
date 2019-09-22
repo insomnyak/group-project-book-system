@@ -1,4 +1,4 @@
-package com.company.bookservice.viewmodel;
+package com.company.queue.shared.viewmodel;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Size;
@@ -51,5 +51,14 @@ public class NoteViewModel {
     @Override
     public int hashCode() {
         return Objects.hash(getNoteId(), getBookId(), getNote());
+    }
+
+    @Override
+    public String toString() {
+        return "NoteViewModel{" +
+                "noteId=" + noteId +
+                ", bookId=" + bookId +
+                ", note='" + note + '\'' +
+                '}';
     }
 }
