@@ -47,38 +47,41 @@ public class BookServiceLayer {
                 .mapFirstToSecond(false, false);
         book = bookDao.addBook(book);
 
-        /* if NoteViewModel list is not empty then we call the feign service (NoteServiceClient) to retrieve
+        if (bookViewModel.getNotes() != null) {
+            /* if NoteViewModel list is not empty then we call the feign service (NoteServiceClient) to retrieve
          all NoteViewModel to add the notes to the NoteDAO and then setting the ID on the return note*/
-        List<CompletableFuture<NoteViewModel>> listCf = new ArrayList<>();
-        if (bookViewModel != null && !bookViewModel.getNotes().isEmpty()) {
-            Book finalBook = book;
-            bookViewModel.getNotes().stream().forEach(nvm -> {
-                if (nvm == null || nvm.getNote() == null || nvm.getNote().trim().length() == 0) {
-                    throw new IllegalArgumentException("Please provide content for the note.");
+            List<CompletableFuture<NoteViewModel>> listCf = new ArrayList<>();
+            if (bookViewModel != null && !bookViewModel.getNotes().isEmpty()) {
+                Book finalBook = book;
+                bookViewModel.getNotes().stream().forEach(nvm -> {
+                    if (nvm == null || nvm.getNote() == null || nvm.getNote().trim().length() == 0) {
+                        throw new IllegalArgumentException("Please provide content for the note.");
+                    }
+                    nvm.setBookId(finalBook.getBookId());
+                    CompletableFuture<NoteViewModel> cf = CompletableFuture.supplyAsync(System::nanoTime)
+                            .thenApply(start -> {
+                                NoteViewModel nvm2 = nsl.saveNote(nvm);
+                                return nvm2;
+                            }).thenApply(noteViewModel -> {
+                                nvm.setNoteId(noteViewModel.getNoteId());
+                                return nvm;
+                            });
+                    listCf.add(cf);
+                });
+                CompletableFuture<Void> allFutures =
+                        CompletableFuture.allOf(listCf.toArray(new CompletableFuture[listCf.size()]));
+                try {
+                    allFutures.get(TIMEOUT, TIMEOUT_UNIT);
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e.getCause() + " | " + e.getMessage());
+                } catch (TimeoutException e) {
+                    throw new QueueRequestTimeoutException("The request timed out while waiting for fulfillment. " +
+                            "Your new book has been placed in a queue and will be added shortly.");
                 }
-                nvm.setBookId(finalBook.getBookId());
-                CompletableFuture<NoteViewModel> cf = CompletableFuture.supplyAsync(System::nanoTime)
-                        .thenApply(start -> {
-                            NoteViewModel nvm2 = nsl.saveNote(nvm);
-                            return nvm2;
-                        }).thenApply(noteViewModel -> {
-                            nvm.setNoteId(noteViewModel.getNoteId());
-                            return nvm;
-                        });
-                listCf.add(cf);
-            });
-            CompletableFuture<Void> allFutures =
-                    CompletableFuture.allOf(listCf.toArray(new CompletableFuture[listCf.size()]));
-            try {
-                allFutures.get(TIMEOUT, TIMEOUT_UNIT);
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e.getCause() + " | " + e.getMessage());
-            } catch (TimeoutException e) {
-                throw new QueueRequestTimeoutException("The request timed out while waiting for fulfillment. " +
-                        "Your new book has been placed in a queue and will be added shortly.");
             }
+        } else {
+            bookViewModel.setNotes(new ArrayList<>());
         }
-
 
         bookViewModel.setBookId(book.getBookId());
 
@@ -91,6 +94,7 @@ public class BookServiceLayer {
                 .mapFirstToSecond(false, false);
 
         List<NoteViewModel> noteViewModelList = nsl.findAllNotesByBookId(book.getBookId());
+        noteViewModelList = noteViewModelList == null ? new ArrayList<>() : noteViewModelList;
         bookViewModel.setNotes(noteViewModelList);
 
         return bookViewModel;
