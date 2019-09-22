@@ -1,30 +1,42 @@
 package com.company.bookservice.service;
 
 import com.company.bookservice.dao.BookDao;
+import com.company.bookservice.exception.QueueRequestTimeoutException;
 import com.company.bookservice.model.Book;
 import com.company.bookservice.util.MapClasses;
 import com.company.bookservice.util.feign.NoteServiceClient;
 import com.company.bookservice.viewmodel.BookViewModel;
-import com.company.bookservice.viewmodel.NoteViewModel;
+import com.company.queue.shared.viewmodel.NoteViewModel;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-@Component
-public class ServiceLayer {
+@Component @Primary
+public class BookServiceLayer {
 
-    BookDao bookDao;
-    NoteServiceClient noteServiceClient;
+    public static final Long TIMEOUT = 1L;
+    public static final TimeUnit TIMEOUT_UNIT = TimeUnit.SECONDS;
+
+    private BookDao bookDao;
+    private NoteServiceLayer nsl;
 
     @Autowired
-    public ServiceLayer(BookDao bookDao, NoteServiceClient noteServiceClient) {
+    public BookServiceLayer(BookDao bookDao, NoteServiceLayer nsl) {
         this.bookDao = bookDao;
-        this.noteServiceClient = noteServiceClient;
+        this.nsl = nsl;
     }
 
     @Transactional
@@ -37,6 +49,7 @@ public class ServiceLayer {
 
         /* if NoteViewModel list is not empty then we call the feign service (NoteServiceClient) to retrieve
          all NoteViewModel to add the notes to the NoteDAO and then setting the ID on the return note*/
+        List<CompletableFuture<NoteViewModel>> listCf = new ArrayList<>();
         if (bookViewModel != null && !bookViewModel.getNotes().isEmpty()) {
             Book finalBook = book;
             bookViewModel.getNotes().stream().forEach(nvm -> {
@@ -44,9 +57,26 @@ public class ServiceLayer {
                     throw new IllegalArgumentException("Please provide content for the note.");
                 }
                 nvm.setBookId(finalBook.getBookId());
-                NoteViewModel nvm2 = saveNote(nvm);
-                nvm.setNoteId(nvm2.getNoteId());
+                CompletableFuture<NoteViewModel> cf = CompletableFuture.supplyAsync(System::nanoTime)
+                        .thenApply(start -> {
+                            NoteViewModel nvm2 = nsl.saveNote(nvm);
+                            return nvm2;
+                        }).thenApply(noteViewModel -> {
+                            nvm.setNoteId(noteViewModel.getNoteId());
+                            return nvm;
+                        });
+                listCf.add(cf);
             });
+            CompletableFuture<Void> allFutures =
+                    CompletableFuture.allOf(listCf.toArray(new CompletableFuture[listCf.size()]));
+            try {
+                allFutures.get(TIMEOUT, TIMEOUT_UNIT);
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e.getCause() + " | " + e.getMessage());
+            } catch (TimeoutException e) {
+                throw new QueueRequestTimeoutException("The request timed out while waiting for fulfillment. " +
+                        "Your new book has been placed in a queue and will be added shortly.");
+            }
         }
 
 
@@ -60,7 +90,7 @@ public class ServiceLayer {
         BookViewModel bookViewModel = (new MapClasses<>(book, BookViewModel.class))
                 .mapFirstToSecond(false, false);
 
-        List<NoteViewModel> noteViewModelList = findAllNotesByBookId(book.getBookId());
+        List<NoteViewModel> noteViewModelList = nsl.findAllNotesByBookId(book.getBookId());
         bookViewModel.setNotes(noteViewModelList);
 
         return bookViewModel;
@@ -70,7 +100,7 @@ public class ServiceLayer {
         // 1. get all books
         List<Book> bookList = bookDao.getAllBooks();
         // 2. get all notes
-        List<NoteViewModel> noteViewModelList = findAllNotes();
+        List<NoteViewModel> noteViewModelList = nsl.findAllNotes();
         // 3. instantiate bookViewModeList
         List<BookViewModel> bookViewModelList = new ArrayList<>();
 
@@ -100,7 +130,7 @@ public class ServiceLayer {
     }
 
     public void removeBook(Integer bookId) {
-        removeNotesByBookId(bookId);
+        nsl.removeNotesByBookId(bookId);
 
         Book book = bookDao.getBookById(bookId);
 
@@ -131,7 +161,7 @@ public class ServiceLayer {
         }
         List<NoteViewModel> newNotes = bookViewModel.getNotes();
         if (newNotes == null || newNotes.isEmpty()) {
-            removeNotesByBookId(bookId);
+            nsl.removeNotesByBookId(bookId);
         } else {
             // update/delete/add notes
 
@@ -149,7 +179,7 @@ public class ServiceLayer {
              */
 
             // 1. get currentNotes
-            List<NoteViewModel> currentNotes = findAllNotesByBookId(bookId);
+            List<NoteViewModel> currentNotes = nsl.findAllNotesByBookId(bookId);
 
             // 2. filter currentNotes for ones not present in newNotes >> notesToDelete
             List<NoteViewModel> notesToDelete = currentNotes.stream().filter(nvm -> {
@@ -160,7 +190,7 @@ public class ServiceLayer {
             }).collect(Collectors.toList());
 
             // 3. delete notesToDelete
-            notesToDelete.forEach(nvm -> removeNote(nvm.getNoteId()));
+            notesToDelete.forEach(nvm -> nsl.removeNote(nvm.getNoteId()));
 
             // 4. for newNotes
             for (NoteViewModel newNote : newNotes) {
@@ -172,49 +202,24 @@ public class ServiceLayer {
                             .anyMatch(nvm -> nvm.getNoteId().equals(newNote.getNoteId()));
                     // ii. if id is found >> update
                     if (inCurrentNotes) {
-                        updateNote(newNote);
+                        nsl.updateNote(newNote);
                     } else {
                         // iii. if id is not found >> create new note and update id
                         if (newNote.getNote() == null || newNote.getNote().trim().length() == 0) {
                             throw new IllegalArgumentException("Please provide content for the note.");
                         }
                         newNote.setBookId(bookId);
-                        NoteViewModel createdNote = saveNote(newNote);
+                        NoteViewModel createdNote = nsl.saveNote(newNote);
                         newNote.setNoteId(createdNote.getNoteId());
                     }
                 } else {
                     // - if id is not present:
                     // i. create new note and update id
                     newNote.setBookId(bookId);
-                    NoteViewModel createdNote = saveNote(newNote);
+                    NoteViewModel createdNote = nsl.saveNote(newNote);
                     newNote.setNoteId(createdNote.getNoteId());
                 }
             }
         }
-    }
-
-    @Transactional
-    private NoteViewModel saveNote(NoteViewModel nvm) {
-        return noteServiceClient.createNote(nvm);
-    }
-
-    private List<NoteViewModel> findAllNotes() {
-        return noteServiceClient.getAllNotes();
-    }
-
-    private void updateNote(NoteViewModel nvm) {
-        noteServiceClient.updateNote(nvm.getNoteId(), nvm);
-    }
-
-    private void removeNote(Integer noteId) {
-        noteServiceClient.deleteNote(noteId);
-    }
-
-    private void removeNotesByBookId(Integer bookId) {
-        noteServiceClient.deleteNotesByBookId(bookId);
-    }
-
-    private List<NoteViewModel> findAllNotesByBookId(Integer bookId) {
-        return noteServiceClient.getNotesByBookId(bookId);
     }
 }

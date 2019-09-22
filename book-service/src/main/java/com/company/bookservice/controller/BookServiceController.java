@@ -1,6 +1,6 @@
 package com.company.bookservice.controller;
 
-import com.company.bookservice.service.ServiceLayer;
+import com.company.bookservice.service.BookServiceLayer;
 import com.company.bookservice.viewmodel.BookViewModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheConfig;
@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import static com.insomnyak.util.terminal.AnsiColor.*;
 
@@ -21,12 +23,13 @@ import static com.insomnyak.util.terminal.AnsiColor.*;
 public class BookServiceController {
 
     @Autowired
-    private ServiceLayer sl;
+    BookServiceLayer sl;
 
     @CachePut(key = "#result.getBookId()")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public BookViewModel createBook(@RequestBody @Valid BookViewModel bvm) {
+    public BookViewModel createBook(@RequestBody @Valid BookViewModel bvm)
+            throws InterruptedException, ExecutionException, TimeoutException {
         System.out.println(String.format("%sSAVING BOOK AND ADDING TO CACHE%s", BRIGHT_RED, RESET));
         return sl.saveBook(bvm);
     }
@@ -57,6 +60,12 @@ public class BookServiceController {
     @ResponseStatus(HttpStatus.OK)
     public List<BookViewModel> findAllBooks() {
         return sl.findAllBooks();
+    }
+
+    @CacheEvict(allEntries = true)
+    @GetMapping("/clearCache")
+    public String clearCache() {
+        return "Cache Cleared";
     }
 
 }

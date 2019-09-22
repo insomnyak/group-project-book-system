@@ -5,33 +5,41 @@ import com.company.bookservice.dao.BookDaoJdbcTemplateImpl;
 import com.company.bookservice.model.Book;
 import com.company.bookservice.util.feign.NoteServiceClient;
 import com.company.bookservice.viewmodel.BookViewModel;
-import com.company.bookservice.viewmodel.NoteViewModel;
+import com.company.queue.shared.viewmodel.NoteViewModel;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
 
-public class ServiceLayerTest {
+public class BookServiceLayerTest {
 
-    ServiceLayer serviceLayer;
+    public static final String EXCHANGE = "note-exchange";
+    public static final String ROUTING_KEY_ADD = "note.add.book.service";
+    public static final String ROUTING_KEY_UPDATE = "note.update.book.service";
+    public static final String ROUTING_KEY_DELETE = "note.delete.book.service";
+    public static final String ROUTING_KEY_DELETE_BY_BOOK_ID = "note.deleteByBookId.book.service";
+
+    BookServiceLayer bookServiceLayer;
 
     BookDao bookDao;
-
-    NoteServiceClient noteServiceClient;
+    NoteServiceLayer nsl;
 
     @Before
     public void setUp() throws Exception {
 
         setUpBookDaoMock();
-        setUpNoteServiceMock();
+        setUpNoteServiceLayerMock();
 
-        serviceLayer = new ServiceLayer(bookDao, noteServiceClient);
+        bookServiceLayer = new BookServiceLayer(bookDao, nsl);
     }
 
     private void setUpBookDaoMock(){
@@ -74,9 +82,9 @@ public class ServiceLayerTest {
         doReturn(null).when(bookDao).getBookById(3);
     }
 
-    private void setUpNoteServiceMock(){
+    private void setUpNoteServiceLayerMock(){
 
-        noteServiceClient = mock(NoteServiceClient.class);
+        nsl = mock(NoteServiceLayer.class);
 
         NoteViewModel noteViewModel = new NoteViewModel();
         noteViewModel.setNoteId(100);
@@ -91,16 +99,13 @@ public class ServiceLayerTest {
         noteViewModelList.add(noteViewModel);
 
         // mock add
-        doReturn(noteViewModel).when(noteServiceClient).createNote(noteViewModel1);
+        doReturn(noteViewModel).when(nsl).saveNote(noteViewModel1);
 
-        // mock get
-        doReturn(noteViewModel).when(noteServiceClient).getNote(100);
+        // mock getNotesByBook
+        doReturn(noteViewModelList).when(nsl).findAllNotesByBookId(1);
 
         // mock get all
-        doReturn(noteViewModelList).when(noteServiceClient).getAllNotes();
-
-        // mock get notes by book
-        doReturn(noteViewModelList).when(noteServiceClient).getNotesByBookId(1);
+        doReturn(noteViewModelList).when(nsl).findAllNotes();
 
         NoteViewModel updateNote = new NoteViewModel();
         updateNote.setNoteId(200);
@@ -111,16 +116,14 @@ public class ServiceLayerTest {
         updateNoteList.add(updateNote);
 
         // mock update
-        doNothing().when(noteServiceClient).updateNote(200, updateNote);
-        doReturn(updateNote).when(noteServiceClient).getNote(200);
-        doReturn(updateNoteList).when(noteServiceClient).getNotesByBookId(2);
+        doNothing().when(nsl).updateNote(updateNote);
+        doReturn(updateNoteList).when(nsl).findAllNotesByBookId(2);
 
         // mock delete
-        doNothing().when(noteServiceClient).deleteNote(300);
-        doReturn(null).when(noteServiceClient).getNote(300);
+        doNothing().when(nsl).removeNotesByBookId(3);
 
         // mock trying to get notes from a book that does not exist
-        doReturn(new ArrayList<NoteViewModel>()).when(noteServiceClient).getNotesByBookId(3);
+        doReturn(new ArrayList<NoteViewModel>()).when(nsl).findAllNotesByBookId(3);
     }
 
     @Test
@@ -142,9 +145,9 @@ public class ServiceLayerTest {
         bvm.setAuthor("J.D Salinger");
         bvm.setNotes(noteViewModelList);
 
-        bvm = serviceLayer.saveBook(bvm);
+        bvm = bookServiceLayer.saveBook(bvm);
 
-        BookViewModel bvm2 = serviceLayer.findBook(bvm.getBookId());
+        BookViewModel bvm2 = bookServiceLayer.findBook(bvm.getBookId());
 
         assertEquals(bvm, bvm2);
     }
@@ -172,9 +175,9 @@ public class ServiceLayerTest {
         bvmUpdate.setTitle(bookUpdate.getTitle());
         bvmUpdate.setNotes(noteViewModelList);
 
-        serviceLayer.updateBook(bookUpdate.getBookId(), bvmUpdate);
+        bookServiceLayer.updateBook(bookUpdate.getBookId(), bvmUpdate);
 
-        BookViewModel bvmAfterUpdate = serviceLayer.findBook(bvmUpdate.getBookId());
+        BookViewModel bvmAfterUpdate = bookServiceLayer.findBook(bvmUpdate.getBookId());
 
         assertEquals(bvmAfterUpdate, bvmUpdate);
     }
@@ -182,9 +185,9 @@ public class ServiceLayerTest {
     @Test(expected = NoSuchElementException.class)
     public void deleteBookViewModel() {
 
-        serviceLayer.removeBook(3);
+        bookServiceLayer.removeBook(3);
 
-        BookViewModel bvm = serviceLayer.findBook(3);
+        BookViewModel bvm = bookServiceLayer.findBook(3);
 
     }
 
@@ -211,7 +214,7 @@ public class ServiceLayerTest {
         bvm.setTitle(book.getTitle());
         bvm.setNotes(noteViewModelList);
 
-        serviceLayer.updateBook(3, bvm);
+        bookServiceLayer.updateBook(3, bvm);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -236,6 +239,6 @@ public class ServiceLayerTest {
         bvm.setTitle(book.getTitle());
         bvm.setNotes(noteViewModelList);
 
-        serviceLayer.saveBook(bvm);
+        bookServiceLayer.saveBook(bvm);
     }
 }

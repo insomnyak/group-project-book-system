@@ -1,5 +1,7 @@
 package com.company.bookservice.viewmodel;
 
+import com.company.queue.shared.viewmodel.NoteViewModel;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Size;
