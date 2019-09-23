@@ -3,18 +3,14 @@ package com.company.bookservice.service;
 import com.company.bookservice.dao.BookDao;
 import com.company.bookservice.dao.BookDaoJdbcTemplateImpl;
 import com.company.bookservice.model.Book;
-import com.company.bookservice.util.feign.NoteServiceClient;
 import com.company.bookservice.viewmodel.BookViewModel;
 import com.company.queue.shared.viewmodel.NoteViewModel;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.amqp.rabbit.AsyncRabbitTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
@@ -110,7 +106,7 @@ public class BookServiceLayerTest {
         NoteViewModel updateNote = new NoteViewModel();
         updateNote.setNoteId(200);
         updateNote.setBookId(2);
-        updateNote.setNote("The apprentice successful turned himself into the wind.");
+        updateNote.setNote("The apprentice successfully turned himself into the wind.");
 
         List<NoteViewModel> updateNoteList = new ArrayList<>();
         updateNoteList.add(updateNote);
@@ -165,7 +161,7 @@ public class BookServiceLayerTest {
         NoteViewModel updateNote = new NoteViewModel();
         updateNote.setNoteId(200);
         updateNote.setBookId(2);
-        updateNote.setNote("The apprentice successful turned himself into the wind.");
+        updateNote.setNote("The apprentice successfully turned himself into the wind.");
 
         List<NoteViewModel> noteViewModelList = new ArrayList<>();
         noteViewModelList.add(updateNote);
@@ -204,7 +200,7 @@ public class BookServiceLayerTest {
         NoteViewModel nvm = new NoteViewModel();
         nvm.setNoteId(200);
         nvm.setBookId(2);
-        nvm.setNote("The apprentice successful turned himself into the wind.");
+        nvm.setNote("The apprentice successfully turned himself into the wind.");
 
         List<NoteViewModel> noteViewModelList = new ArrayList<>();
         noteViewModelList.add(nvm);
