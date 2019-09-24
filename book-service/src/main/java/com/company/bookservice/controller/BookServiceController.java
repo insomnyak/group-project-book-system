@@ -20,6 +20,7 @@ import static com.insomnyak.util.terminal.AnsiColor.*;
 @RestController
 @RequestMapping(value = "/books")
 @CacheConfig(cacheNames = {"books"})
+@CrossOrigin
 public class BookServiceController {
 
     @Autowired

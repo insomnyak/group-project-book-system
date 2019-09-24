@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Service</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="/css/styles.css" type="text/css">
+    <script src='/lib/appScripts.js' type='application/javascript'></script>
+</head>
+<body>
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<ol class="breadcrumb">
+    <li class="breadcrumb-item active">Book Service</li>
+</ol>
+
+<div class="container">
+    <form enctype="application/json" method="get" id="mainForm">
+        <div class="form-group row">
+            <label for="method">Menu Options</label>
+            <select class="form-control form-control-sm"
+                    name="method" id="method" onchange='updateSubmit()'>
+                <option value="POST">Add a new book</option>
+                <option value="GET_tasks">Find a book by Id</option>
+                <option value="GET_all">Find all books</option>
+                <option value="UPDATE">Update a book</option>
+                <option value="DELETE">Delete a book</option>
+            </select>
+        </div>
+
+        <div class="form-group row new-book" id='newBook'>
+            <label for="title" class="col-sm-1-12 col-form-label">Title</label>
+            <div class="col-sm-1-12">
+                <input type="text" class="form-control" name="name" id="title" placeholder="enter book title"
+                       aria-describedby="val1HelpId">
+                <small id="titleHelpId" class="text-muted">*required</small>
+            </div>
+            <label for="author" class="col-sm-1-12 col-form-label">Author</label>
+            <div class="col-sm-1-12">
+                <input type="text" class="form-control" name="name" id="author" placeholder="enter book author"
+                       aria-describedby="val1HelpId">
+                <small id="authorHelpId" class="text-muted">*required</small>
+            </div>
+            <label for="notes" class="col-sm-1-12 col-form-label">Notes</label>
+            <div class="col-sm-1-12">
+                <input type="text" class="form-control" name="name" id="notes" placeholder="enter book notes"
+                       aria-describedby="val1HelpId">
+                <small id="notesHelpId" class="text-muted"></small>
+            </div>
+        </div>
+
+
+
+        <div class="form-group row">
+            <div class="offset-sm-2 col-sm-10">
+                <button type="submit" class="btn btn-primary">submit</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="container">
+    <p id="response"></p>
+</div>
+
+<script src="/lib/request.js" type='application/javascript'></script>
+
+</body>
+</html>

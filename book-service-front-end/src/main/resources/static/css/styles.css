@@ -1,0 +1,39 @@
+div {
+    width: 100%;
+}
+
+label {
+    width: 30vw;
+}
+
+select, small, input[type='text'] {
+    width: 94%;
+    margin-left: 3%;
+}
+
+input[type='submit'] {
+    width: 40vw !important;
+}
+
+.header > div, .dataRow > div {
+    float: left;
+    width: 20%;
+    height: auto;
+}
+
+.col4 {
+    width: 40% !important;
+    height: fit-content !important;
+}
+
+#response > div > div.header {
+
+}
+
+p.error::before {
+    content: "ERROR: ";
+    background-color: #FFF689;
+    color: #EC0B43;
+    font-weight: bold;
+    font-size: larger;
+}
