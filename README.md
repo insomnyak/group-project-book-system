@@ -12,7 +12,7 @@ The Book System keeps track of books and associated notes. The system consists o
 
 ### System Design
 
-![book-system](images/book-system.png)
+![book-system](book-system.png)
 
 
 
